@@ -25,183 +25,175 @@ buffer: .space 32
 	newLine
 	syscall 11
 .end_macro
+
 .macro readCh
 	syscall 12
 .end_macro
 
-main:
-	li t0, 10 # <enter>
-	
-	
-	li a1, 0  # 1 number
-	li a3, 0  # 2 number
-	
-	
-	li a2, 0  # flag
-	li a4, 0  # operation
-	li a5, 0  # operation buffer
-	
-	
+# get input char from a0, build HEX number and put it into a1
+.macro readHex  
+    mv a1, zero
+    mv a2, zero
+    li a3, 10
+    while:
+        readCh
 
+        beq a0, a3, end_loop
 
-readFirst:
-	readCh
-	beq a0, t0, readFirstDone
+        # validating digit
+        addi a0, a0, -48
+        sltiu a2, a0, 10
+        beqz a2, end
 
-    addi a0, a0, -48
-    sltiu a2, a0, 10
-    beqz a2, end
+        slli a1, a1, 4
+        add a1, a1, a0
+        j while
 
-readFirstProlog:
-	add t3, t3, a0
-	slli t3, t3, 4
-	j readFirst
-	
-readFirstDone:
-	srli t3, t3, 4
-	mv a1, t3
-	mv t3, zero
+    end_loop:
+        
+.end_macro
 
-readSecond:
-	readCh
-	beq a0, t0, readSecondDone
-	
-    addi a0, a0, -48
-    sltiu a2, a0, 10
-    beqz a2, end
-
-readSecondProlog:
-	add t3, t3, a0
-	slli t3, t3, 4
-	j readSecond
-
-readSecondDone:
-	srli t3, t3, 4
-	mv a3, t3
-	mv t3, zero
-	
-	#reading operation
-	readCh
+# print number from register t2
+.macro printHex
+	li t0, 10
 	newLine
-	mv a4, a0
-	li a5, 43
-	
-	mv t0, zero
-	mv t1, zero
-	mv t2, zero
-	mv t3, zero
-	mv a2, zero
-
-	beq a0, a5, opAdd
-	
-	li a5, 45
-	beq a0, a5, opSub
-
-# t1 = 0x0..6..0
-# t2 = res
-# t4 = 0x666...666
-# t5 = 0x00f..0000
-opAdd:
-	add t2, a1, a3
-    li a5, 9
-    li t4, 0x6666666666666666
-    li t5, 0xf
-	loop:
-		li a5, 9
-		beqz a1, endLoop
-
-		
-		andi t0, a1, 0xf
-    	srli a1, a1, 4
-	
-    	andi t3, a3, 0xf
-    	srli a3, a3, 4
-    
-	    isOverflow:
-	        sub a5, a5, t0
-	        slt a2, a5, t3
-	        bnez a2, shift
-	        slli t5, t5, 4
-	        beqz a2, loop
-	        shift:
-	            and a6, t4, t5
-	            add t1, t1, a6
-	            mv a6, zero
-	    		slli t5, t5, 4
-    	j loop
-    endLoop:
-    	bnez a3, loop
-    	# correction
-        add a1, t2, t1
-        j printHex
-    
-opSub:
-	li t4, 0x6666666666666666
-    li t5, 0xf
-	sub t2, a1, a3
-	loop1:
-		beqz a1, endLoop1
-		andi t0, a1, 0xf
-    	srli a1, a1, 4
-	
-    	andi t3, a3, 0xf
-    	srli a3, a3, 4
-    	isOverflow1:
-    		blt t0, t3, shift1
-    		slli t5, t5, 4
-    		j loop1
-    		shift1:
-    			and a6, t4, t5
-	            add t1, t1, a6
-	            mv a6, zero
-	    		slli t5, t5, 4
-		
-	endLoop1:
-		bnez a3, loop1
-    	# correction
-        sub a1, t2, t1
-        j printHex
-printHex:
 	li a3, 0
 	li a2, 0
 	la t0, buffer
 	li a4, 10
-	
-hexLoop:
-	andi a3, a1, 0xf
-	srli a1, a1, 4
-	#blt a3, a4, offset
-	blt a3, a4, dig
-	bge a3, a4, letter
-	dig:
-		addi a3, a3, 48
-		j offset
-	letter:
-		addi a3, a3, 55
-		j offset
+
+	hexLoop:
+		andi a3, t2, 0xf
+		srli t2, t2, 4
+		blt a3, a4, dig
+		bge a3, a4, letter
+		dig:
+			addi a3, a3, 48
+			j offset
+		letter:
+			addi a3, a3, 55
+			j offset
 	
 
-offset:
-	#addi a3, a3, 48
-	sb a3, (t0)
-	addi t0, t0, 1
-	li a3, 0
-bne a1, zero, hexLoop
-# printing values from array in reverse order
-li a3, 120 # x
-sb a3, (t0)
-addi t0, t0, 1
-li a3, 48 # 0
-sb a3, (t0),
-addi t0, t0, 1
+	offset:
+		#addi a3, a3, 48
+		sb a3, (t0)
+		addi t0, t0, 1
+		li a3, 0
+		bne t2, zero, hexLoop
+		
+		# printing values from array in reverse order
+		li a3, 120 # x
+		sb a3, (t0)
+		addi t0, t0, 1
+		li a3, 48 # 0
+		sb a3, (t0),
+		addi t0, t0, 1
+	
+		la a3, buffer
+	
+	for:
+		addi t0, t0, -1
+		lb a0, (t0)
+		syscall 11
+		bgt t0, a3, for
+		exit 0
+.end_macro
 
-la a3, buffer
-for:
-	addi t0, t0, -1
-	lb a0, (t0)
-	syscall 11	
-	bgt t0, a3, for
-exit 0
+
+main:
+    # reading numbers and put into t0, t1 respectively
+    readHex
+    mv t0, a1
+    readHex
+    mv t1, a1
+
+    # reading operator, put result of calculation in t2
+    readCh
+    li a1, 43
+    beq a0, a1, opAdd
+    li a1, 45
+    beq a0, a1, opSub
+    exit 1
+
+    opAdd:
+        add t2, t0, t1
+
+        
+        li a2, 0xf
+        li a3, 9
+        li a4, 0x6
+        # correction number
+        li a5, 0
+
+        do_while:
+   	
+        	li a3, 9
+
+			andi s0, t0, 0xf
+			srli t0, t0, 4
+			
+			andi s1, t1, 0xf
+			srli t1, t1, 4
+			
+			bnez s0, body
+			beqz s1, do_while_end
+
+            body:
+                slli a2, a2, 4
+                # overflow checking
+                sub a3, a3, s0
+                bgt s1, a3, shift
+                slli a4, a4, 4
+                j do_while
+
+                shift:
+                    add a5, a5, a4
+                    slli a4, a4, 4
+                	j do_while	
+
+        do_while_end:
+            add t2, t2, a5
+            j end
+
+
+
+    opSub:
+     	sub t2, t0, t1
+
+        
+        li a2, 0xf
+        li a4, 0x6
+        # correction number
+        li a5, 0
+
+        do_while_sub:
+
+			andi s0, t0, 0xf
+			srli t0, t0, 4
+			
+			andi s1, t1, 0xf
+			srli t1, t1, 4
+			
+			bnez s0, body_sub
+			beqz s1, do_while_end_sub
+
+            body_sub:
+                slli a2, a2, 4
+                # overflow checking
+                blt s0, s1, shift_sub
+                slli a4, a4, 4
+                j do_while_sub
+
+                shift_sub:
+                    add a5, a5, a4
+                    slli a4, a4, 4
+                	j do_while_sub
+
+        do_while_end_sub:
+			sub t2, t2, a5
+            j end
 
 end:
-	exit 0
+	printHex
+    exit 0
