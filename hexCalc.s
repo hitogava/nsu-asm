@@ -15,185 +15,136 @@ buffer: .space 32
 .end_macro
 
 .macro newLine
-	mv a6, a0
-	mv a0, t0
+	mv a1, a0
+	li a0, 10
 	syscall 11
-	mv a0, a6
+	mv a0, a1
 .end_macro
+
 .macro echoCh
 	newLine
 	syscall 11
 .end_macro
+
 .macro readCh
 	syscall 12
 .end_macro
 
 main:
-	li t0, 10 # <enter>
+	call readHex
+	mv s0, a0
+	call readHex
+	mv s1, a0
 	
-	
-	li a1, 0  # 1 number
-	li a3, 0  # 2 number
-	
-	
-	li a2, 0  # flag
-	li a4, 0  # operation
-	li a5, 0  # operation buffer
-	
-	
-
-
-readFirst:
 	readCh
-	beq a0, t0, readFirstDone
+	mv t2, a0 # operation
 	
-	# 0...9
-	slti a2, a0, 48
-	bnez a2, end
-	slti a2, a0, 58
-	bnez a2, digit1
+	li t3, 43 # buffer
+	beq t2, t3, opAdd
 	
-	# A...F
-	slti a2, a0, 65
-	bnez a2, end
-	slti a2, a0, 71
-	bnez a2, capL1
+	li t3, 45
+	beq t2, t3, opSub
 	
-	# a...f
-	slti a2, a0, 97
-	bnez a2, end
-	slti a2, a0, 103
-	bnez a2, L1
+	li t3, 38
+	beq t2, t3, opAnd
+	
+	li t3, 124
+	beq t2, t3, opOr
 	
 	j end
-
-digit1:
-	addi a0, a0, -48
-	j readFirstProlog
-
-capL1:
-	addi a0, a0, -55
-	j readFirstProlog
-
-L1:
-	addi a0, a0, -87
-	j readFirstProlog
-
-digit2:
-	addi a0, a0, -48
-	j readSecondProlog
-
-capL2:
-	addi a0, a0, -55
-	j readSecondProlog
-L2:
-	addi a0, a0, -87
-	j readSecondProlog
+	
+	opAdd:
+		add s0, s0, s1
+		j printRes
+	opSub:
+		sub s0, s0, s1
+		j printRes
+	opAnd:
+		and s0, s0, s1
+		j printRes
+	opOr:
+		or s0, s0, s1
+    
+    printRes:
+    	mv a0, s0
+    	newLine
+    	call printHex
+    	exit 0
 
 
-readFirstProlog:
-	add t3, t3, a0
-	slli t3, t3, 4
-	j readFirst
-	
-readFirstDone:
-	srli t3, t3, 4
-	mv a1, t3
-	mv t3, zero
-	j readSecond
+readHex:
+	li t0, 0
+	li t1, 0
+	li t2, 10
 
-	j end
-	
-readSecond:
-	readCh
-	beq a0, t0, readSecondDone
-	
-	# 0...9
-	slti a2, a0, 48
-	bnez a2, end
-	slti a2, a0, 58
-	bnez a2, digit2
-	
-	# A...F
-	slti a2, a0, 65
-	bnez a2, end
-	slti a2, a0, 71
-	bnez a2, capL2
-	
-	# a...f
-	slti a2, a0, 97
-	bnez a2, end
-	slti a2, a0, 103
-	bnez a2, L2
-	
-	j end
+    while:
+        readCh
 
-readSecondProlog:
-	add t3, t3, a0
-	slli t3, t3, 4
-	j readSecond
+        beq a0, t2, end_loop
 
-readSecondDone:
-	srli t3, t3, 4
-	mv a3, t3
-	mv t3, zero
-	
-	#reading operation
-	readCh
-	newLine
-	mv a4, a0
-	li a5, 43
-	beq a0, a5, opAdd
-	
-	li a5, 45
-	beq a0, a5, opSub
-	
-	li a5, 38
-	beq a0, a5, opAnd
-	
-	li a5, 124
-	beq a0, a5, opOr
+        # 0...9
+        slti t0, a0, 48
+        bnez t0, end
+        slti t0, a0, 58
+        bnez t0, digit
 
-opAdd:
-	add a1, a1, a3
-	j printHex
-opSub:
-	sub a1, a1, a3
-	j printHex
-opAnd:
-	and a1, a1, a3
-	j printHex
-opOr:
-	or a1, a1, a3
-	
-	
+        # A...F
+        slti t0, a0, 65
+        bnez t0, end
+        slti t0, a0, 71
+        bnez t0, cap_letter
+
+        # a...f
+        slti t0, a0, 97
+        bnez t0, end
+        slti t0, a0, 103
+        bnez t0, letter
+        
+        j end
+
+        digit:
+            addi a0, a0, -48
+            j while_iter
+        cap_letter:
+            addi a0, a0, -55
+            j while_iter
+        letter:
+            addi a0, a0, -87
+            j while_iter
+
+        while_iter:
+            slli t1, t1, 4
+            add t1, t1, a0
+            j while
+
+    end_loop:
+    
+    mv a0, t1
+    ret
+
 printHex:
-	li a3, 0
 	li a2, 0
 	la t0, buffer
 	li a4, 10
 	
-hexLoop:
-	andi a3, a1, 0xf
-	srli a1, a1, 4
-	#blt a3, a4, offset
-	blt a3, a4, dig
-	bge a3, a4, letter
-	dig:
-		addi a3, a3, 48
-		j offset
-	letter:
-		addi a3, a3, 55
-		j offset
+	hexLoop:
+		andi a3, a0, 0xf
+		srli a0, a0, 4
+		
+		blt a3, a4, dig
+		bge a3, a4, let
+		dig:
+			addi a3, a3, 48
+			j offset
+		let:
+			addi a3, a3, 55
+			j offset
 	
-
-offset:
-	#addi a3, a3, 48
-	sb a3, (t0)
-	addi t0, t0, 1
-	li a3, 0
-	bne a1, zero, hexLoop
-end:
+	offset:
+		sb a3, (t0)
+		addi t0, t0, 1
+		bne a0, zero, hexLoop
+	
 	# printing values from array in reverse order
 	li a3, 120 # x
 	sb a3, (t0)
@@ -206,6 +157,10 @@ end:
 	for:
 		addi t0, t0, -1
 		lb a0, (t0)
-		syscall 11	
+		syscall 11
 		bgt t0, a3, for
-	exit 0
+	ret
+
+
+end:
+	exit 1
