@@ -15,10 +15,8 @@ buffer: .space 32
 .end_macro
 
 .macro newLine
-	mv a1, a0
 	li a0, 10
 	syscall 11
-	mv a0, a1
 .end_macro
 
 .macro echoCh
@@ -30,14 +28,31 @@ buffer: .space 32
 	syscall 12
 .end_macro
 
+.macro push %r
+    addi sp, sp, -4
+    sw %r, 0(sp)
+.end_macro
+
+.macro pop %r
+    lw %r, 0(sp)
+    addi sp, sp, 4
+.end_macro
+
 main:
 	call readHex
-	mv s0, a0
+	mv a2, a0
 	call readHex
-	mv s1, a0
+	mv a1, a0
+
+    mv a0, a2
+
+    call performOperation
 	
+performOperation:
+    push a0
 	readCh
 	mv t2, a0 # operation
+    pop a0
 	
 	li t3, 43 # buffer
 	beq t2, t3, opAdd
@@ -54,23 +69,28 @@ main:
 	j end
 	
 	opAdd:
-		add s0, s0, s1
+		add a0, a0, a1
 		j printRes
 	opSub:
-		sub s0, s0, s1
+		sub a0, a0, a1
 		j printRes
 	opAnd:
-		and s0, s0, s1
+		and a0, a0, a1
 		j printRes
 	opOr:
-		or s0, s0, s1
+		or a0, a0, a1
     
     printRes:
-    	mv a0, s0
+    	push a0
     	newLine
-    	call printHex
-    	exit 0
+        pop a0
 
+        push a0
+    	call printHex
+        pop a0
+
+    	exit 0
+    ret
 
 readHex:
 	li t0, 0
