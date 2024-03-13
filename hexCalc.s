@@ -14,13 +14,12 @@ main:
     readCh
     mv a2, a0
     mv a0, s0
-    mv a1, s1
-    # args: a0: n1, a1: n2, a2: op
+    mv a1, s1 
     call performOperation
     exit 0
-	
-performOperation:
 
+# void performOperation(int, int, char)
+performOperation:
 	li t3, 43 # buffer
 	beq a2, t3, opAdd
 	
@@ -36,21 +35,20 @@ performOperation:
 	error "Invalid operation"
 	
 	opAdd:
-		add a0, a0, a1
+		add a3, a0, a1
 		j printRes
 	opSub:
-		sub a0, a0, a1
+		sub a3, a0, a1
 		j printRes
 	opAnd:
-		and a0, a0, a1
+		and a3, a0, a1
 		j printRes
 	opOr:
-		or a0, a0, a1
+		or a3, a0, a1
     
     printRes:
-    	mv s0, a0
     	newLine
-        mv a0, s0
+        mv a0, a3
 
         push ra
     	call printHex

@@ -57,13 +57,13 @@
 .end_macro
 
 
-
+#int readHex()
 readHex:
 	li t0, 0
 	li t1, 0
 	li t2, 10
 	li t3, 0xf
-	slli t3, t3, 28
+	slli t3, t3, 32
     while:
         readCh
         and t0, t1, t3
@@ -72,23 +72,23 @@ readHex:
 
         # 0...9
         slti t0, a0, 48
-        bnez t0, end
+        bnez t0, invalid_char_error
         slti t0, a0, 58
         bnez t0, digit
 
         # A...F
         slti t0, a0, 65
-        bnez t0, end
+        bnez t0, invalid_char_error
         slti t0, a0, 71
         bnez t0, cap_letter
 
         # a...f
         slti t0, a0, 97
-        bnez t0, end
+        bnez t0, invalid_char_error
         slti t0, a0, 103
         bnez t0, letter
         
-        error "Invalid character"
+        j invalid_char_error
 
         digit:
             addi a0, a0, -48
@@ -110,11 +110,11 @@ readHex:
     mv a0, t1
     ret
 
+# void printHex(int)
 printHex:
 	li a2, 10
 	li a3, 0
 	hex_loop:
-		beqz a0, hex_loop_end
 		andi a1, a0, 0xf
 		bge a1, a2, let
 		addi a1, a1, 48
@@ -125,7 +125,7 @@ printHex:
 			srli a0, a0, 4
 			push a1
 			addi a3, a3, 1
-			j hex_loop
+			bnez a0, hex_loop
 				
 	hex_loop_end:
 		li a1, 120
@@ -134,15 +134,14 @@ printHex:
 		push a1
 		addi a3, a3, 2 # for 0x
 		for:
-			beqz a3, for_end
 			pop a0
 			syscall 11
 			addi a3, a3, -1
-			j for
+			bnez a3, for
 		for_end:
 			ret
-			
-end:
-	exit 0
+
 overflow_error:
 	error "More than 8 digits"
+invalid_char_error:
+	error "Invalid character"
