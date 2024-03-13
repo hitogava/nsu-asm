@@ -1,0 +1,148 @@
+.text
+
+.macro syscall %n
+	li a7, %n
+	ecall
+.end_macro
+
+.macro exit %ecode
+	li a0, %ecode
+	syscall 93
+.end_macro
+
+.macro newLine
+	li a0, 10
+	syscall 11
+.end_macro
+
+.macro echoCh
+	newLine
+	syscall 11
+.end_macro
+
+.macro readCh
+	syscall 12
+.end_macro
+
+.macro push %r
+    addi sp, sp, -4
+    sw %r, 0(sp)
+.end_macro
+
+.macro push2 %r1 %r2
+    addi sp, sp, -8
+    sw %r1, 0(sp)
+    sw %r2, 4(sp)
+.end_macro
+
+.macro pop %r
+    lw %r, 0(sp)
+    addi sp, sp, 4
+.end_macro
+
+.macro pop2 %r1 %r2
+    lw %r1, 0(sp)
+    lw %r2, 4(sp)
+    addi sp, sp, 8
+.end_macro
+
+.macro error %str
+.data
+	str: .asciz %str
+.text
+	newLine
+	la a0, str
+	syscall 4
+	exit 1
+.end_macro
+
+
+
+readHex:
+	li t0, 0
+	li t1, 0
+	li t2, 10
+	li t3, 0xf
+	slli t3, t3, 28
+    while:
+        readCh
+        and t0, t1, t3
+        bnez t0, overflow_error    
+        beq a0, t2, end_loop
+
+        # 0...9
+        slti t0, a0, 48
+        bnez t0, end
+        slti t0, a0, 58
+        bnez t0, digit
+
+        # A...F
+        slti t0, a0, 65
+        bnez t0, end
+        slti t0, a0, 71
+        bnez t0, cap_letter
+
+        # a...f
+        slti t0, a0, 97
+        bnez t0, end
+        slti t0, a0, 103
+        bnez t0, letter
+        
+        error "Invalid character"
+
+        digit:
+            addi a0, a0, -48
+            j while_iter
+        cap_letter:
+            addi a0, a0, -55
+            j while_iter
+        letter:
+            addi a0, a0, -87
+            j while_iter
+
+        while_iter:
+            slli t1, t1, 4
+            add t1, t1, a0
+            j while
+
+    end_loop:
+    
+    mv a0, t1
+    ret
+
+printHex:
+	li a2, 10
+	li a3, 0
+	hex_loop:
+		beqz a0, hex_loop_end
+		andi a1, a0, 0xf
+		bge a1, a2, let
+		addi a1, a1, 48
+		j hex_loop_iter
+		let:
+			addi a1, a1, 55
+		hex_loop_iter:
+			srli a0, a0, 4
+			push a1
+			addi a3, a3, 1
+			j hex_loop
+				
+	hex_loop_end:
+		li a1, 120
+		push a1
+		li a1, 48
+		push a1
+		addi a3, a3, 2 # for 0x
+		for:
+			beqz a3, for_end
+			pop a0
+			syscall 11
+			addi a3, a3, -1
+			j for
+		for_end:
+			ret
+			
+end:
+	exit 0
+overflow_error:
+	error "More than 8 digits"
