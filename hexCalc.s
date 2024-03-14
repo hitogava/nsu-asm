@@ -1,8 +1,7 @@
-j main
-
-.include "io.s"
+.include "utils.s"
 
 .text
+.global main
 
 main:
 	call readHex
