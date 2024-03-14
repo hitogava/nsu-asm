@@ -1,5 +1,5 @@
 .text
-
+.eqv scr t6
 .macro syscall %n
 	li a7, %n
 	ecall
@@ -54,6 +54,11 @@
 	la a0, str
 	syscall 4
 	exit 1
+.end_macro
+
+.macro beqi %r, %i, %label
+	li scr, %i
+	beq %r, scr, %label
 .end_macro
 
 

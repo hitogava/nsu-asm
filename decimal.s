@@ -2,9 +2,10 @@
 .text
 .global main
 main:
-    call readHex
-    call mod10
+    #call readHex
+    call read_decimal
     mv s0, a0
+    call print_decimal
     exit 0
 
 mult:
@@ -61,4 +62,61 @@ mod10:
 	pop ra
 	sub a0, s1, a0
 	pop s1
+	ret
+
+#int read_decimal()
+read_decimal:
+	li t0, 0
+	li t2, 0x1
+	slli t2, t2, 32
+	push s0
+	.rd_while:
+		readCh
+		and t1, t0, t2
+		bnez t1, overflow_error
+		beqi a0, 10, .rd_while_end
+		
+		addi a0, a0, -48
+		sltiu a2, a0, 10
+		beqz a2, invalid_char_error
+		
+		li a1, 10
+		mv s0, a0
+		mv a0, t0
+		push ra
+		call mult
+		pop ra
+		add t0, a0, s0
+		
+		j .rd_while
+	.rd_while_end:
+		mv a0, t0
+	pop s0
+	ret
+
+# void print_decimal(int)
+print_decimal:
+	push2 s0, s1
+	li s1, 0 # counter
+	.pd_while:
+		mv s0, a0
+		push ra
+		call mod10
+		pop ra
+		addi a0, a0, 48
+		push a0
+		addi s1, s1, 1
+		mv a0, s0
+		push ra
+		call div10
+		pop ra
+		bnez a0, .pd_while
+	.pd_while_end:
+		.pd_for:
+			pop a0
+			syscall 11
+			addi s1, s1, -1
+			bnez s1, .pd_for
+	
+	pop2 s0, s1
 	ret
