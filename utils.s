@@ -67,13 +67,12 @@ readHex:
 	li t0, 0
 	li t1, 0
 	li t2, 10
-	li t3, 0xf
-	slli t3, t3, 32
+	li t3, 9
     while:
+        beqz t3, digits_length_error
         readCh
-        and t0, t1, t3
-        bnez t0, overflow_error    
         beq a0, t2, end_loop
+        addi t3, t3, -1
 
         # 0...9
         slti t0, a0, 48
@@ -146,7 +145,7 @@ printHex:
 		for_end:
 			ret
 
-overflow_error:
+digits_length_error:
 	error "More than 8 digits"
 invalid_char_error:
 	error "Invalid character"

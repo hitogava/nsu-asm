@@ -1,12 +1,5 @@
 .include "utils.s"
-.text
-.global main
-main:
-    #call readHex
-    call read_decimal
-    mv s0, a0
-    call print_decimal
-    exit 0
+
 
 mult:
     li t0, 0
@@ -14,21 +7,26 @@ mult:
     li t2, 0x1
     li t3, 0x1
     li t4, 0 # buffer
+    li t5, 33
 
     slli t2, t2, 31
 
     powers_loop:
-        bge t3, t2, main_loop
+    	beqz t5, main_loop 
+        #bge t3, t2, main_loop
         and t4, a1, t3
         add t1, t1, t4
         slli t3, t3, 1
+        
+        addi t5, t5, -1
+        
         j powers_loop
     main_loop:
         beqz a0, main_loop_end
         add t0, t0, t1
         addi a0, a0, -1
         j main_loop
-    main_loop_end:
+    main_loop_end: 	
         mv a0, t0
     ret
 
@@ -67,30 +65,45 @@ mod10:
 #int read_decimal()
 read_decimal:
 	li t0, 0
-	li t2, 0x1
-	slli t2, t2, 32
+	li s2, 0x9
+	li s3, 0x1
 	push s0
 	.rd_while:
+		beqz s2, digits_length_error
 		readCh
-		and t1, t0, t2
-		bnez t1, overflow_error
 		beqi a0, 10, .rd_while_end
+		addi s2, s2, -1
 		
-		addi a0, a0, -48
-		sltiu a2, a0, 10
-		beqz a2, invalid_char_error
+		# if the first character is '-'
+		beqi a0, 0x2d, .L1
+		j .L2
+		.L1:
+			slti a2, s2, 0x8
+			bnez a2, invalid_char_error
+			neg s3, s3
+			j .L3
 		
-		li a1, 10
-		mv s0, a0
+		.L2:
+			addi a0, a0, -48
+			sltiu a2, a0, 10
+			beqz a2, invalid_char_error
+			
+		.L3:
+			li a1, 10
+			mv s0, a0
+			mv a0, t0
+			push ra
+			call mult
+			pop ra
+			add t0, a0, s0
+			
+			j .rd_while
+	.rd_while_end:
 		mv a0, t0
+		mv a1, s3
 		push ra
 		call mult
 		pop ra
-		add t0, a0, s0
-		
-		j .rd_while
-	.rd_while_end:
-		mv a0, t0
 	pop s0
 	ret
 

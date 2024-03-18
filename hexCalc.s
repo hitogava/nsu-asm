@@ -6,14 +6,16 @@
 main:
 	call readHex
 	mv s0, a0
-	call readHex	
+	call readHex
 	mv s1, a0
+	
+	li s2, 0xffffffff
     
     # read operaiton
     readCh
     mv a2, a0
     mv a0, s0
-    mv a1, s1 
+    mv a1, s1
     call performOperation
     exit 0
 
