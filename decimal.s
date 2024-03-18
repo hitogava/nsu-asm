@@ -1,33 +1,56 @@
 .include "utils.s"
 
-
+.text
+.globl main
+main:
+	call read_decimal
+	mv s0, a0
+	call read_decimal
+	mv a1, a0
+	
+	mv a0, s0
+	call mult
+	mv s0, a0
+	exit 0
+	
+#int mult(int, int)	
 mult:
     li t0, 0
     li t1, 0 # sum of powers
-    li t2, 0x1
+    li t2, -1 # step
+    
     li t3, 0x1
     li t4, 0 # buffer
-    li t5, 33
-
-    slli t2, t2, 31
-
+    li t5, 32
+    
+    slt a6, a0, zero
+    slt a5, a1, zero
+    xor a5, a5, a6 # a5 - sign flag
+    
+    
+    bge a0, zero, .E1
+    neg a0, a0
+    .E1:
+    	bge a1, zero, powers_loop
+    	neg a1, a1	
     powers_loop:
-    	beqz t5, main_loop 
-        #bge t3, t2, main_loop
+    	beqz t5, main_loop
         and t4, a1, t3
         add t1, t1, t4
-        slli t3, t3, 1
-        
-        addi t5, t5, -1
-        
+        slli t3, t3, 1          
+        addi t5, t5, -1        
         j powers_loop
     main_loop:
         beqz a0, main_loop_end
         add t0, t0, t1
         addi a0, a0, -1
         j main_loop
-    main_loop_end: 	
+    main_loop_end:
         mv a0, t0
+        beqi a5, 0x1, .L4
+        ret
+    	.L4:
+    		neg a0, a0
     ret
 
 # int div10(int)
@@ -64,10 +87,12 @@ mod10:
 
 #int read_decimal()
 read_decimal:
+	push2 s0, s2
+	push s3
 	li t0, 0
 	li s2, 0x9
 	li s3, 0x1
-	push s0
+	
 	.rd_while:
 		beqz s2, digits_length_error
 		readCh
@@ -81,7 +106,7 @@ read_decimal:
 			slti a2, s2, 0x8
 			bnez a2, invalid_char_error
 			neg s3, s3
-			j .L3
+			j .rd_while
 		
 		.L2:
 			addi a0, a0, -48
@@ -104,7 +129,8 @@ read_decimal:
 		push ra
 		call mult
 		pop ra
-	pop s0
+	pop s3
+	pop2 s0, s2
 	ret
 
 # void print_decimal(int)
