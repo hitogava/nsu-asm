@@ -6,11 +6,12 @@ main:
 	call read_decimal
 	mv s0, a0
 	call read_decimal
-	mv a1, a0
 	
-	mv a0, s0
+	mv a1, s0
 	call mult
-	mv s0, a0
+	
+	call print_decimal
+	
 	exit 0
 	
 #int mult(int, int)	
@@ -65,10 +66,33 @@ div10_rec:
 	srai s0, a0, 2
 	srai a0, a0, 1
 	call div10
-	sub a0, s0, a0
+	
+	sub a0, s0, a0	
 	srai a0, a0, 1
+	
 	pop2 ra, s0
+	push ra
+	mv a1, s0
+	call div10_correction
+	pop ra
 	ret
+
+div10_correction:
+	push2 s3, s4
+	mv s3, a0
+	mv s4, a1
+	
+	li a1, 10
+	push ra
+	call mult
+	pop ra
+	
+	ble a0, s4, .return
+	addi s3, s3, -1
+	.return:
+		mv a0, s3
+		pop2 s3, s4
+		ret
 
 # int mod10(int)
 mod10:
@@ -77,6 +101,7 @@ mod10:
 	push ra
 	call div10
 	pop ra
+	
 	li a1, 10
 	push ra
 	call mult
@@ -142,6 +167,7 @@ print_decimal:
 		push ra
 		call mod10
 		pop ra
+		
 		addi a0, a0, 48
 		push a0
 		addi s1, s1, 1
@@ -149,6 +175,7 @@ print_decimal:
 		push ra
 		call div10
 		pop ra
+		
 		bnez a0, .pd_while
 	.pd_while_end:
 		.pd_for:
