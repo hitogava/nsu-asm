@@ -45,15 +45,19 @@
     lw %r2, 4(sp)
     addi sp, sp, 8
 .end_macro
-
+.macro swap %r1 %r2
+	xor %r1, %r1, %r2
+	xor %r2, %r2, %r1
+	xor %r1, %r1, %r2
+.end_macro
 .macro error %str
-.data
-	str: .asciz %str
-.text
-	newLine
-	la a0, str
-	syscall 4
-	exit 1
+	.data
+		str: .asciz %str
+	.text
+		newLine
+		la a0, str
+		syscall 4
+		exit 1
 .end_macro
 
 .macro beqi %r, %i, %label
@@ -61,6 +65,10 @@
 	beq %r, scr, %label
 .end_macro
 
+.macro bgti %r, %i, %label
+	li scr, %i
+	bgt %r, scr, %label
+.end_macro
 
 #int readHex()
 readHex:
@@ -69,7 +77,7 @@ readHex:
 	li t2, 10
 	li t3, 9
     while:
-        beqz t3, digits_length_error
+        beqz t3, hex_length_error
         readCh
         beq a0, t2, end_loop
         addi t3, t3, -1
@@ -145,7 +153,7 @@ printHex:
 		for_end:
 			ret
 
-digits_length_error:
+hex_length_error:
 	error "More than 8 digits"
 invalid_char_error:
 	error "Invalid character"

@@ -6,16 +6,16 @@
 .end_macro
 
 .macro readChar
-syscall 12
+    syscall 12
 .end_macro
 
 .macro echoChar
-mv a1, a0
-li a0, 10
-syscall 11
-mv a0, a1
-syscall 11
-li a1, 0
+    mv a1, a0
+    li a0, 10
+    syscall 11
+    mv a0, a1
+    syscall 11
+    li a1, 0
 .end_macro
 
 .macro exit %ecode
