@@ -3,11 +3,7 @@
 .text
 .globl main
 main:
-	li a0, 0x80000000
-	#call read_decimal
-	call div10
-	mv s0, a0
-	exit 1
+	call read_decimal
 	call print_decimal
 	exit 0
 	mv s1, a0

@@ -38,32 +38,33 @@ mult:
     main_loop_end:
         mv a0, t0
         beqi a5, 0x1, .L4
+        ret
     	.L4:
     		neg a0, a0
     ret
 
 # int div10(int)
 div10:
-	sltiu t0, a0, 0xa
-	beqz t0, div10_rec
+	li t0, 0x9
+	bgtu a0, t0, div10_rec
 	li a0, 0x0
 	ret
 
 div10_rec:
 	push2 ra, s0
-	srai s0, a0, 2
-	srai a0, a0, 1
+	# (not srai)
+	srli s0, a0, 2
+	srli a0, a0, 1
 	call div10
 	
 	sub a0, s0, a0	
-	srai a0, a0, 1
+	srli a0, a0, 1
 	
+	pop2 ra, s0	
 	push ra
 	mv a1, s0
 	call div10_correction
 	pop ra
-	
-	pop2 ra, s0	
 	ret
 
 div10_correction:
@@ -102,8 +103,8 @@ mod10:
 #int read_decimal()
 read_decimal:
 	push2 s0, s2
-	push s3
-	li t0, 0
+	push2 s3, s4
+	li s4, 0
 	li s2, 0xb
 	li s3, 0x1
 	
@@ -131,22 +132,21 @@ read_decimal:
 			li a1, 10
 			mv s0, a0
 			li a0, 10
-			mv a1, t0
+			mv a1, s4
 			push ra
 			call mult
 			pop ra
-			add t0, a0, s0
+			add s4, a0, s0
 			
 			j .rd_while
 	.rd_while_end:
-		mv a0, t0
-		mv a1, s3
-		push ra
-		call mult
-		pop ra
-	pop s3
-	pop2 s0, s2
-	ret
+		mv a0, s4
+		bgti s3, 0xffffffff, .prologue_read_dec
+		neg a0, a0
+	.prologue_read_dec:
+		pop2 s3, s4
+		pop2 s0, s2
+		ret
 
 # void print_decimal(int)
 print_decimal:
